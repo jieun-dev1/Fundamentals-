@@ -1,4 +1,8 @@
-package org.example;
+package com.example.tcpecho.server;
+
+import com.example.tcpecho.configuration.PortConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,16 +16,25 @@ import java.util.Iterator;
 import java.util.Set;
 
 public class EchoServer {
+    private static final Logger logger = LogManager.getLogger(EchoServer.class);
+
+    private static PortConfig portConfig;
+
+    public EchoServer(PortConfig portConfig) {
+        this.portConfig = portConfig;
+    }
+
     public static void main(String[] args) throws IOException {
         //open(): create a Selector object / channel
         Selector selector = Selector.open();
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         //bind port, set selectable channel to non-blocking mode, register channel to the selector
-        serverSocketChannel.bind(new InetSocketAddress("localhost", 8080));
+        serverSocketChannel.bind(new InetSocketAddress("localhost", portConfig.findPort()));
+
         serverSocketChannel.configureBlocking(false);
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        System.out.println("server is ready");
+        logger.info("server is ready");
 
         while (true) {
             selector.select();
@@ -32,7 +45,6 @@ public class EchoServer {
                 if (key.isAcceptable()) {
                     register(selector, serverSocketChannel);
                 }
-
                 if (key.isReadable()) {
                     answerWithEcho(buffer, key);
                 }
@@ -54,7 +66,7 @@ public class EchoServer {
         int point = client.read(buffer);
         //end of the input stream. no more bytes available to be read || may indicate error
         if (point == -1) {
-            System.out.println("Not accepting client messages anymore");
+            logger.info("Not accepting client messages anymore");
             client.close();
         } else {
             buffer.flip();
@@ -71,4 +83,6 @@ public class EchoServer {
         ProcessBuilder builder = new ProcessBuilder(javaBin, "-cp", classPath, className);
         return builder.start();
     }
+
+
 }

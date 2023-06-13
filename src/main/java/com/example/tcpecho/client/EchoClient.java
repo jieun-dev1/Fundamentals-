@@ -1,4 +1,8 @@
-package org.example;
+package com.example.tcpecho.client;
+
+import com.example.tcpecho.configuration.PortConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -6,9 +10,20 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class EchoClient {
+    private static final Logger logger = LogManager.getLogger(EchoClient.class);
     private static SocketChannel client;
     private static ByteBuffer buffer;
     private static EchoClient instance;
+    private PortConfig portConfig;
+
+    private EchoClient() {
+        try {
+            client = SocketChannel.open(new InetSocketAddress("localhost", portConfig.findPort()));
+            buffer = ByteBuffer.allocate(256);
+        } catch (IOException e) {
+            logger.error("An error occurred", e);
+        }
+    }
 
     public static void main(String[] args) {
         start();
@@ -17,7 +32,7 @@ public class EchoClient {
     }
 
     public static EchoClient start() {
-        if(instance == null)
+        if (instance == null)
             instance = new EchoClient();
         return instance;
     }
@@ -25,15 +40,6 @@ public class EchoClient {
     public static void stop() throws IOException {
         client.close();
         buffer = null;
-    }
-
-    private EchoClient() {
-        try {
-            client = SocketChannel.open(new InetSocketAddress("localhost", 8080));
-            buffer = ByteBuffer.allocate(256);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public static String sendMessage(String msg) {
@@ -44,11 +50,11 @@ public class EchoClient {
             buffer.clear();
             client.read(buffer);
             response = new String(buffer.array()).trim();
-            System.out.println("response=" + response);
+            logger.info("response=" + response);
             buffer.clear();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("An error occurred", e);
         }
         return response;
     }
